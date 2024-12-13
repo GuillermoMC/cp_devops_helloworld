@@ -1,3 +1,5 @@
-result.xml
+result-rest.xml
+result-unit.xml
+docker-compose-wiremock.yml
 __pycache__
 .pytest_cache
