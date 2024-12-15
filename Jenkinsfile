@@ -3,12 +3,6 @@ pipeline {
 
     stages {
         
-        stage('GetCode') {
-            steps {
-                git 'https://github.com/GuillermoMC/cp_devops_helloworld' 
-            }
-        }
-        
         stage('Build') {
             steps {
                 echo 'Building'
@@ -35,13 +29,34 @@ pipeline {
                 stage('Rest') {
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            /* Lanzar FLASK */
                             bat '''
+
                                 SET FLASK_APP=app\\api.py
                                 start flask run
-                               
+                                
+                            '''
+                            /* Esperar 2 minutos como máximo a que el servicio flask este operativo */
+                            timeout(2) {
+                                waitUntil {
+                                    script {
+                                        try {
+                                            def respuesta = httpRequest 'http://localhost:5000/'
+                                            return (respuesta.status == 200)
+                                        }
+                                        catch (exception) {
+                                            return false
+                                        }
+                                    }
+                                }
+                            }
+                            /* Pruebas REST */
+                            bat '''
+                              
                                 set PYTHONPATH=%WORKSPACE%
                                 echo %WORKSPACE%
                                 pytest --junitxml=result-rest.xml test\\rest
+
                             '''
                             
                         }
