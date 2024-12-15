@@ -1,0 +1,97 @@
+pipeline {
+    agent none    
+
+    stages {
+        
+        stage('GetCode') {
+            agent any
+            steps {
+                cleanWs()
+                git 'https://github.com/GuillermoMC/cp_devops_helloworld' 
+                stash name: 'proyecto', includes: '**'
+            }
+        }
+        
+        stage('Build') {
+            agent any
+            steps {
+                echo 'Building'
+                bat '''
+
+                    whoami
+                    hostname
+                    echo %WORKSPACE%
+                    
+                    dir
+                    
+                '''
+            }
+        }
+        
+        stage('Test') {
+            parallel {
+                stage('Unit') {
+                    agent { node { label 'agente1' } }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'proyecto'
+                            bat '''
+
+                                whoami
+                                hostname
+                                echo %WORKSPACE%
+                            
+                                set PYTHONPATH=%WORKSPACE%
+                                echo %WORKSPACE%
+                                pytest --junitxml=result-unit.xml test\\unit
+                                 
+                             '''
+                             stash name: 'testunit', includes: 'result-unit.xml'
+                        }
+                    }
+                }
+                
+                stage('Rest') {
+                    agent { node { label 'agente2' } }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'proyecto'
+                            bat '''
+                                whoami
+                                hostname
+                                echo %WORKSPACE%
+                                
+                                SET FLASK_APP=app\\api.py
+                                start flask run
+                               
+                                set PYTHONPATH=%WORKSPACE%
+                                echo %WORKSPACE%
+                                pytest --junitxml=result-rest.xml test\\rest
+                                
+                            '''
+                            stash name: 'testrest', includes: 'result-rest.xml'
+                            
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Results') {
+            agent any
+            steps {
+                unstash name: 'testrest'
+                unstash name: 'testunit'
+                junit 'result*.xml'
+            }
+        }
+        
+        stage('Limpieza') {
+            agent any
+            steps {
+                cleanWs()
+            }
+        }
+        
+    }
+}
