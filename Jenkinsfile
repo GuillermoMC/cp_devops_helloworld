@@ -3,11 +3,11 @@ pipeline {
 
     stages {
         
-        stage('GetCode') {
+        /*stage('GetCode') {
             steps {
                 git 'https://github.com/GuillermoMC/cp_devops_helloworld' 
             }
-        }
+        }*/
         
         stage('Build') {
             steps {
