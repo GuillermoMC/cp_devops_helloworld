@@ -1,5 +1,0 @@
-[run]
-omit = app/__init__.py,app/api.py
-
-[report]
-omit = app/__init__.py,app/api.py
