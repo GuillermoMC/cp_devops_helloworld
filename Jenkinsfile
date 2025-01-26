@@ -60,27 +60,7 @@ pipeline {
             
         }
         
-        stage('Coverage') {
-            
-            steps {
-                
-                // coverage report para ver en los logs los resultados
-                // coverage xml para exportarlos al .xml para el plugin
-                bat '''
-                    coverage report
-                    coverage xml
-                '''
-                
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
-                }
-                
-            }
-            
-        }
-        
-        
-        stage('Codigo estatico') {
+        stage('Static') {
             
             steps {
 
@@ -93,7 +73,7 @@ pipeline {
             
         }
         
-        stage('Seguridad') {
+        stage('Security') {
             
             steps {
                 
@@ -108,7 +88,7 @@ pipeline {
         }
         
         
-        stage('Rendimiento') {
+        stage('Performance') {
             
             steps {
                 
@@ -118,6 +98,25 @@ pipeline {
                 '''
 
                 perfReport sourceDataFiles: 'flask.jtl'
+                
+            }
+            
+        }
+
+        stage('Coverage') {
+            
+            steps {
+                
+                // coverage report para ver en los logs los resultados
+                // coverage xml para exportarlos al .xml para el plugin
+                bat '''
+                    coverage report
+                    coverage xml
+                '''
+                
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
+                }
                 
             }
             
