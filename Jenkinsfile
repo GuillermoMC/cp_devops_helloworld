@@ -27,7 +27,7 @@ pipeline {
                                 set PYTHONPATH=%WORKSPACE%
                                 echo %WORKSPACE%
                                 
-                                coverage run pytest --junitxml=result-unit.xml test\\unit
+                                coverage run -m pytest --junitxml=result-unit.xml test\\unit
                              '''
                             stash name: 'testunit', includes: 'result-unit.xml'
                             stash name: 'coverunit', includes: 'coverage.xml'
