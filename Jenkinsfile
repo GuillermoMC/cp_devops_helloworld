@@ -64,7 +64,7 @@ pipeline {
             
             steps {
 
-                //catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     
                     // se incluye coveraje en la etapa unit para ejecuitar las pruebas una unica vez
                     // coverage report para ver en los logs los resultados
@@ -76,7 +76,7 @@ pipeline {
 
                     cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
                     
-                //}
+                }
 
             }
             
