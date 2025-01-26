@@ -20,23 +20,23 @@ pipeline {
                 
                 stage('Unit') {
                     
-                    // --cov=app --cov-report=xml:coverage.xml --cov-config=.coveragerc
+
                     steps {
+
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
                             bat '''
                                 set PYTHONPATH=%WORKSPACE%
                                 echo %WORKSPACE%
                                 
                                 coverage run -m pytest --junitxml=result-unit.xml test\\unit
                              '''
+
                             stash name: 'testunit', includes: 'result-unit.xml'
                             stash name: 'coverunit', includes: 'coverage.xml'
 
-                            bat '''
-                                echo 'Listar directorio actual'
-                                dir
-                            '''
                         }
+                        
                     }
                     
                 }
@@ -97,13 +97,12 @@ pipeline {
         stage('Coverage') {
             
             steps {
+                
+                unstash name: 'coverunit'
 
                 bat '''
-                    coverage report
                     coverage xml -o coverage.xml
                 '''
-
-                unstash name: 'coverunit'
 
                 cobertura coberturaReportFile: 'coverage.xml', lineCoverageTargets: '95,0,85', conditionalCoverageTargets: '90,0,80' 
                 
