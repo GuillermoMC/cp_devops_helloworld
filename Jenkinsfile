@@ -64,11 +64,16 @@ pipeline {
             
             steps {
 
-                bat '''
-                    flake8 --exit-zero --format=pylint app > flake8.out
-                '''
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
 
-                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
+                    bat '''
+                        flake8 --exit-zero --format=pylint app > flake8.out
+                    '''
+
+                    recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
+
+                }
+            
             }
             
         }
@@ -76,13 +81,17 @@ pipeline {
         stage('Security') {
             
             steps {
-                
-                bat '''
-                    bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
-                '''
 
-                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
-                
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    
+                    bat '''
+                        bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                    '''
+
+                    recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
+                    
+                }
+
             }
             
         }
@@ -92,12 +101,15 @@ pipeline {
             
             steps {
                 
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
 
-                bat '''
-                     C:\\Users\\Guille\\Desktop\\apache-jmeter-5.6.3\\bin\\jmeter -n -t CP1-2.jmx -f -l resultadosperformance.jtl
-                '''
+                    bat '''
+                        C:\\Users\\Guille\\Desktop\\apache-jmeter-5.6.3\\bin\\jmeter -n -t CP1-2.jmx -f -l resultadosperformance.jtl
+                    '''
 
-                perfReport sourceDataFiles: 'resultadosperformance.jtl'
+                    perfReport sourceDataFiles: 'resultadosperformance.jtl'
+
+                }
                 
             }
             
@@ -106,17 +118,21 @@ pipeline {
         stage('Coverage') {
             
             steps {
-                
-                // se incluye coveraje en la etapa unit para ejecuitar las pruebas una unica vez
-                // coverage report para ver en los logs los resultados
-                // coverage xml para exportarlos al .xml para el plugin
-                bat '''
-                    coverage report
-                    coverage xml
-                '''
 
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
-                
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    
+                    // se incluye coveraje en la etapa unit para ejecuitar las pruebas una unica vez
+                    // coverage report para ver en los logs los resultados
+                    // coverage xml para exportarlos al .xml para el plugin
+                    bat '''
+                        coverage report
+                        coverage xml
+                    '''
+
+                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
+                    
+                }
+
             }
             
         }
