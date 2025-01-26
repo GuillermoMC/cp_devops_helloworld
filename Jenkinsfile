@@ -94,10 +94,10 @@ pipeline {
                 
 
                 bat '''
-                     C:\\Users\\Guille\\Desktop\\apache-jmeter-5.6.3\\bin\\jmeter -n -t CP1-2.jmx -f -l flask.jtl
+                     C:\\Users\\Guille\\Desktop\\apache-jmeter-5.6.3\\bin\\jmeter -n -t CP1-2.jmx -f -l resultadosperformance.jtl
                 '''
 
-                perfReport sourceDataFiles: 'flask.jtl'
+                perfReport sourceDataFiles: 'resultadosperformance.jtl'
                 
             }
             
@@ -107,16 +107,15 @@ pipeline {
             
             steps {
                 
+                // se incluye coveraje en la etapa unit para ejecuitar las pruebas una unica vez
                 // coverage report para ver en los logs los resultados
                 // coverage xml para exportarlos al .xml para el plugin
                 bat '''
                     coverage report
                     coverage xml
                 '''
-                
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
-                }
+
+                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
                 
             }
             
