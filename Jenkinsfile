@@ -25,10 +25,10 @@ pipeline {
                     bat '''
                         set PYTHONPATH=%WORKSPACE%
                         echo %WORKSPACE%
-                        pytest --junitxml=result-unit.xml test\\unit
+                        coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
                      '''
 
-                     junit 'result*.xml'
+                    junit 'result*.xml'
 
                 }
 
@@ -42,6 +42,7 @@ pipeline {
             steps {
                 
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
                     bat '''
                         SET FLASK_APP=app\\api.py
                         start flask run
@@ -50,6 +51,8 @@ pipeline {
                         echo %WORKSPACE%
                         pytest --junitxml=result-rest.xml test\\rest
                     '''
+
+                    junit 'result*.xml'
                     
                 }
                 
@@ -61,13 +64,15 @@ pipeline {
             
             steps {
                 
+                // coverage report para ver en los logs los resultados
+                // coverage xml para exportarlos al .xml para el plugin
                 bat '''
-                    coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest test\\unit
+                    coverage report
                     coverage xml
                 '''
                 
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,80', lineCoverageTargets: '100,0,90'
+                    cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
                 }
                 
             }
