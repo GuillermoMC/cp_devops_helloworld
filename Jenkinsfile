@@ -33,7 +33,7 @@ pipeline {
 
                             stash name: 'testunit', includes: 'result-unit.xml'
                             stash name: 'coverunit', includes: 'coverage.xml'
-                            stash name: 'coverage-data': includes: '.coverage' 
+                            stash name: 'coverage-data', includes: '.coverage' 
 
                         }
                         
