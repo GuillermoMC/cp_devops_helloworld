@@ -120,4 +120,17 @@ pipeline {
         
     }
     
+    post {
+        
+        always {
+            
+            bat '''
+                taskkill /F /IM flask.exe
+            '''
+            
+            cleanWs()
+
+        }
+    }
+    
 }
