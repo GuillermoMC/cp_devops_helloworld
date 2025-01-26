@@ -28,8 +28,7 @@ pipeline {
                             bat '''
                                 set PYTHONPATH=%WORKSPACE%
                                 echo %WORKSPACE%
-                                
-                                coverage run -m pytest --junitxml=result-unit.xml test\\unit
+                                coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
                              '''
 
                             stash name: 'testunit', includes: 'result-unit.xml'
@@ -123,21 +122,17 @@ pipeline {
             }
             
         }
-        
-        stage('Limpieza') {
-            
-            agent any
-            
-            steps {
-                
-                unstash name: 'testunit'
-                unstash name: 'coverunit'
-                cleanWs()
-                
-            }
-            
-        }
  
+    }
+
+    post {
+
+        always {
+
+            cleanWs()
+
+        }
+
     }
     
 }
