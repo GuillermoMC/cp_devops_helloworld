@@ -33,6 +33,7 @@ pipeline {
 
                             stash name: 'testunit', includes: 'result-unit.xml'
                             stash name: 'coverunit', includes: 'coverage.xml'
+                            stash name: 'coverage-data': includes: '.coverage' 
 
                         }
                         
@@ -97,7 +98,7 @@ pipeline {
             
             steps {
                 
-                unstash name: 'coverunit'
+                unstash name: 'coverage-data'
 
                 bat '''
                     coverage xml -o coverage.xml
@@ -123,16 +124,23 @@ pipeline {
             
         }
  
-    }
-
-    post {
-
-        always {
-
-            cleanWs()
-
+        stage('Limpieza') {
+            
+            agent any
+            
+            steps {
+                
+                unstash name: 'testunit'
+                unstash name: 'coverunit'
+                unstash name: 'coverage-data'
+                cleanWs()
+                
+            }
+            
         }
 
     }
+
+
     
 }
