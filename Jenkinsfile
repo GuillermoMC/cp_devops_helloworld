@@ -4,7 +4,7 @@ pipeline {
     
     stages {
         
-        stage('GetCode') {
+        /* stage('GetCode') {
 
             steps {
 
@@ -13,7 +13,8 @@ pipeline {
                 echo WORKSPACE
 
             }
-        }
+
+        } */
         
       
         stage('Unit') {
