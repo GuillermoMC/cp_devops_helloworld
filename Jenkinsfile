@@ -146,17 +146,7 @@ pipeline {
 
             script {
 
-                def agents = ['Jenkins', 'agente1', 'agente2']
-
-                agents.each { agentName ->
-
-                    node(agentName) {
-
-                        cleanWs()
-
-                    }
-
-                }
+                cleanWs()
 
             }
 
