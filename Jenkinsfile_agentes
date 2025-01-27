@@ -1,97 +1,233 @@
 pipeline {
-    agent none    
-
+    
+    agent none
+    
     stages {
         
         stage('GetCode') {
-            agent any
-            steps {
-                cleanWs()
-                git 'https://github.com/GuillermoMC/cp_devops_helloworld' 
-                stash name: 'proyecto', includes: '**'
-            }
-        }
-        
-        stage('Build') {
-            agent any
-            steps {
-                echo 'Building'
-                bat '''
 
+            agent any
+
+            steps {
+
+                git 'https://github.com/GuillermoMC/cp_devops_helloworld' 
+                bat '''
                     whoami
                     hostname
-                    echo %WORKSPACE%
-                    
-                    dir
-                    
                 '''
+                stash name: 'proyecto', includes: '**'
+
             }
         }
         
-        stage('Test') {
-            parallel {
-                stage('Unit') {
-                    agent { node { label 'agente1' } }
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            unstash name: 'proyecto'
-                            bat '''
+        stage('Pruebas funcionales') {
 
+            parallel {
+
+                stage('Unit') {
+
+                    agent {  label 'agente1' }
+
+                    steps {
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+                            unstash name: 'proyecto'
+
+                            bat '''
+                                set PYTHONPATH=%WORKSPACE%
+                                echo %WORKSPACE%
                                 whoami
                                 hostname
-                                echo %WORKSPACE%
+                                coverage run --branch --source=app --omit=app\\__init__.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
+                            '''
+
+                            junit 'result*.xml'
+
+                        }
+
+                    }
+
+                }
+
+                // wiremock lo tengo levantado en un contenedor docker
+                stage('Rest') {
+                    
+                    agent { label 'agente2'  }
+
+                    steps {
+                        
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+                            unstash name: 'proyecto'
+
+                            bat '''
+                                SET FLASK_APP=app\\api.py
+                                start /B flask run
                             
                                 set PYTHONPATH=%WORKSPACE%
                                 echo %WORKSPACE%
-                                pytest --junitxml=result-unit.xml test\\unit
-                                 
-                             '''
-                             stash name: 'testunit', includes: 'result-unit.xml'
+                                whoami
+                                hostname
+                                pytest --junitxml=result-rest.xml test\\rest
+                            '''
+
+                            junit 'result*.xml'
+
+                            
                         }
+                        
                     }
+                    
+                }
+
+
+            }
+
+        }
+
+
+
+        stage('Pruebas no funcionales') {
+
+            parallel {
+
+                stage('Coverage') {
+            
+                    //agent any
+                    agent { label 'agente1' }
+
+                    steps {
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+                            unstash name: 'proyecto'
+                            
+                            // se incluye coveraje en la etapa unit para ejecuitar las pruebas una unica vez
+                            // coverage report para ver en los logs los resultados
+                            // coverage xml para exportarlos al .xml para el plugin
+                            bat '''
+                                echo %WORKSPACE%
+                                whoami
+                                hostname
+                                coverage report
+                                coverage xml
+                            '''
+
+                            cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '90,0,80', lineCoverageTargets: '95,0,85'
+                            
+                        }
+
+                    }
+                    
+                }
+
+                stage('Static') {
+            
+                    agent any
+                    //agent { label 'agente3' }
+
+                    steps {
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+                            unstash name: 'proyecto'
+
+                            bat '''
+                                echo %WORKSPACE%
+                                whoami
+                                hostname
+                                flake8 --exit-zero --format=pylint app > flake8.out
+                            '''
+
+                            recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
+
+                        }
+                    
+                    }
+                    
                 }
                 
-                stage('Rest') {
-                    agent { node { label 'agente2' } }
+                stage('Security') {
+
+                    agent any
+                    //agent { label 'agente3' }
+                    
                     steps {
+
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
                             unstash name: 'proyecto'
+                            
                             bat '''
+                                echo %WORKSPACE%
                                 whoami
                                 hostname
-                                echo %WORKSPACE%
-                                
-                                SET FLASK_APP=app\\api.py
-                                start flask run
-                               
-                                set PYTHONPATH=%WORKSPACE%
-                                echo %WORKSPACE%
-                                pytest --junitxml=result-rest.xml test\\rest
-                                
+                                bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
-                            stash name: 'testrest', includes: 'result-rest.xml'
+
+                            recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
                             
                         }
+
                     }
+                    
                 }
+                
+                
+                stage('Performance') {
+                    
+                    agent { label 'agente2' }
+
+                    steps {
+
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+                            unstash name: 'proyecto'
+
+                            bat '''
+                                echo %WORKSPACE%
+                                whoami
+                                hostname
+                                C:\\Users\\Guille\\Desktop\\apache-jmeter-5.6.3\\bin\\jmeter -n -t CP1-2.jmx -f -l resultadosperformance.jtl
+                            '''
+
+                            perfReport sourceDataFiles: 'resultadosperformance.jtl'
+
+                        }
+                        
+                    }
+                    
+                }
+
             }
+
         }
 
-        stage('Results') {
-            agent any
-            steps {
-                unstash name: 'testrest'
-                unstash name: 'testunit'
-                junit 'result*.xml'
-            }
-        }
-        
-        stage('Limpieza') {
-            agent any
-            steps {
-                cleanWs()
-            }
-        }
-        
     }
+    
+    post {
+
+        always {
+
+            script {
+
+                def agents = ['Jenkins', 'agente1', 'agente2']
+
+                agents.each { agentName ->
+
+                    node(agentName) {
+
+                        cleanWs()
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+    
 }
