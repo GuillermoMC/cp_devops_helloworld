@@ -146,6 +146,10 @@ pipeline {
 
             script {
 
+                bat '''
+                    taskkill /F /IM flask.exe
+                '''
+
                 cleanWs()
 
             }
